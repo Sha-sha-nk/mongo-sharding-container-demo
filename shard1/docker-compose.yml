@@ -1,0 +1,45 @@
+version: '3.3'
+services:
+
+  shard1svr1:
+    container_name: shard1svr1
+    image: mongo
+    command: mongod --shardsvr --replSet shard1_SapRs --port 27017 --dbpath /data/db
+    ports:
+      - 29000:27017
+    volumes:
+      - shard1svr1:/data/db
+    networks: 
+            - default
+
+  shard1svr2:
+    container_name: shard1svr2
+    image: mongo
+    command: mongod --shardsvr --replSet shard1_SapRs --port 27017 --dbpath /data/db
+    ports:
+      - 29001:27017
+    volumes:
+      - shard1svr2:/data/db
+    networks: 
+            - default
+
+  shard1svr3:
+    container_name: shard1svr3
+    image: mongo
+    command: mongod --shardsvr --replSet shard1_SapRs --port 27017 --dbpath /data/db
+    ports:
+      - 29002:27017
+    volumes:
+      - shard1svr3:/data/db
+    networks: 
+            - default
+
+volumes:
+  shard1svr1: {}
+  shard1svr2: {}
+  shard1svr3: {}
+
+networks: 
+    default:
+      external:
+        name: CCP

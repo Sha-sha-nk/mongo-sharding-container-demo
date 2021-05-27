@@ -1,0 +1,87 @@
+ports:
+--------------------------------------
+mongos: 27017
+config-server: 28000,28001,28002
+shard1:29000,29001,29002
+shard2:30000,30001,30002
+--------------------------------------
+build
+------------------------------------------------------------
+docker-compose -f config-server/docker-compose.yml up -d
+docker exec -it cfgsvr1 mongo
+>rs.initiate(
+  {
+    _id: "cfg_SapRs",
+    configsvr: true,
+    members: [
+      { _id : 0, host : "cfgsvr1:27017" },
+      { _id : 1, host : "cfgsvr2:27017" },
+      { _id : 2, host : "cfgsvr3:27017" }
+    ]
+  }
+)
+>rs.status()
+>exit
+
+docker-compose -f shard1/docker-compose.yml up -d
+docker exec -it shard1svr1 mongo
+>rs.initiate(
+  {
+    _id: "shard1_SapRs",
+    members: [
+      { _id : 0, host : "shard1svr1:27017" },
+      { _id : 1, host : "shard1svr2:27017" },
+      { _id : 2, host : "shard1svr3:27017" }
+    ]
+  }
+)
+>rs.status()
+check which one is primary if its same server continue else exit and exec primary one
+>cfg = rs.conf()
+>cfg.members[2].priority = 0
+>cfg.members[2].slaveDelay = 3600
+>rs.reconfig(cfg)
+>exit
+
+docker-compose -f shard2/docker-compose.yml up -d
+docker exec -it shard2svr1 mongo
+>rs.initiate(
+  {
+    _id: "shard2_SapRs",
+    members: [
+      { _id : 0, host : "shard2svr1:27017" },
+      { _id : 1, host : "shard2svr2:27017" },
+      { _id : 2, host : "shard2svr3:27017" }
+    ]
+  }
+)
+>rs.status()
+check which one is primary if its same server continue else exit and exec primary one
+>cfg = rs.conf()
+>cfg.members[2].priority = 0
+>cfg.members[2].slaveDelay = 3600
+>rs.reconfig(cfg)
+>exit
+
+docker-compose -f mongos/docker-compose.yml up -d
+docker exec -it mongos mongo
+>sh.addShard("shard1_SapRs/shard1svr1:27017,shard1svr2:27017,shard1svr3:27017")
+>sh.addShard("shard2_SapRs/shard2svr1:27017,shard2svr2:27017,shard2svr3:27017")
+>sh.status()
+
+
+-----------------------------------------
+listing services
+------------------------------------------
+docker-compose -f mongos/docker-compose.yml ps
+docker-compose -f config-server/docker-compose.yml ps
+docker-compose -f shard1/docker-compose.yml ps
+docker-compose -f shard2/docker-compose.yml ps
+
+-----------------------------------------
+Close services
+------------------------------------------
+docker-compose -f mongos/docker-compose.yml down
+docker-compose -f config-server/docker-compose.yml down
+docker-compose -f shard1/docker-compose.yml down
+docker-compose -f shard2/docker-compose.yml down
